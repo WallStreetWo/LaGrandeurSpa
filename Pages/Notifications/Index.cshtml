@@ -1,0 +1,57 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Notifications.IndexModel
+@{
+    ViewData["Title"] = "Notifications";
+}
+<div class="spa-content-shell spa-narrow-shell">
+    <div class="spa-page-heading-row">
+        <div>
+            <span class="spa-kicker">YOUR UPDATES</span>
+            <h1>Notifications</h1>
+            <p>Booking confirmations, cancellations and appointment updates live here.</p>
+        </div>
+        @if (Model.Items.Any(x => !x.IsRead))
+        {
+            <form method="post" asp-page-handler="ReadAll">
+                <button class="btn spa-btn-outline" type="submit"><i class="fa-solid fa-check-double"></i> Mark all as read</button>
+            </form>
+        }
+    </div>
+
+    <div class="spa-notification-list">
+        @if (!Model.Items.Any())
+        {
+            <div class="spa-empty-state compact">
+                <i class="fa-regular fa-bell-slash"></i>
+                <h2>No notifications yet</h2>
+                <p>When something changes with your booking, you will see it here.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var item in Model.Items)
+            {
+                var icon = item.Type switch
+                {
+                    NotificationType.Success => "fa-circle-check",
+                    NotificationType.Warning => "fa-triangle-exclamation",
+                    NotificationType.Danger => "fa-circle-exclamation",
+                    _ => "fa-spa"
+                };
+                <form method="post" asp-page-handler="Read" class="spa-notification-item @(item.IsRead ? "is-read" : "is-unread")">
+                    <input type="hidden" name="id" value="@item.Id" />
+                    <div class="spa-notification-icon type-@item.Type.ToString().ToLowerInvariant()"><i class="fa-solid @icon"></i></div>
+                    <div class="spa-notification-copy">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h2>@item.Title</h2>
+                            @if (!item.IsRead) { <span class="spa-new-pill">New</span> }
+                        </div>
+                        <p>@item.Message</p>
+                        <small>@Model.CreatedLocal(item.CreatedUtc).ToString("dd MMM yyyy, HH:mm")</small>
+                    </div>
+                    <button class="spa-notification-open" type="submit" aria-label="Open notification"><i class="fa-solid fa-chevron-right"></i></button>
+                </form>
+            }
+        }
+    </div>
+</div>

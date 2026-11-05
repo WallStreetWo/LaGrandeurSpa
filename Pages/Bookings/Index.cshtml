@@ -1,0 +1,108 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Bookings.IndexModel
+@{
+    ViewData["Title"] = "My Bookings";
+}
+<div class="spa-content-shell spa-narrow-shell">
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="spa-toast-message success"><i class="fa-solid fa-circle-check"></i><span>@Model.StatusMessage</span></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="spa-toast-message danger"><i class="fa-solid fa-circle-exclamation"></i><span>@Model.ErrorMessage</span></div>
+    }
+
+    <div class="spa-page-heading-row">
+        <div>
+            <span class="spa-kicker">YOUR TIME, YOUR BOOKINGS</span>
+            <h1>My Bookings</h1>
+            <p>View upcoming appointments, invoices, confirmation status and your previous visits.</p>
+        </div>
+        <a asp-page="/Index" class="btn spa-btn-primary"><i class="fa-regular fa-calendar-plus"></i> Book another treatment</a>
+    </div>
+
+    <section class="spa-section-block">
+        <div class="spa-section-heading"><h2>Upcoming</h2><span>@Model.Upcoming.Count</span></div>
+        @if (!Model.Upcoming.Any())
+        {
+            <div class="spa-empty-state compact">
+                <i class="fa-regular fa-calendar"></i>
+                <h3>No upcoming appointments</h3>
+                <p>Your next moment of calm can start from the booking calendar.</p>
+                <a asp-page="/Index" class="btn spa-btn-outline">Open calendar</a>
+            </div>
+        }
+        else
+        {
+            <div class="spa-booking-card-grid">
+                @foreach (var booking in Model.Upcoming)
+                {
+                    <article class="spa-booking-card" style="--service-color:@booking.SpaService.ColorHex">
+                        <div class="spa-booking-accent"></div>
+                        <div class="spa-booking-card-top">
+                            <span class="spa-status-pill status-@booking.Status.ToString().ToLowerInvariant()">@booking.Status</span>
+                            <small>@booking.ReferenceNumber</small>
+                        </div>
+                        <h3>@booking.BookedServiceName</h3>
+                        <div class="spa-booking-meta">
+                            <span><i class="fa-regular fa-calendar"></i> @booking.StartLocal.ToString("dddd, dd MMMM yyyy")</span>
+                            <span><i class="fa-regular fa-clock"></i> @booking.StartLocal.ToString("HH:mm") – @booking.EndLocal.ToString("HH:mm")</span>
+                            <span><i class="fa-solid fa-hourglass-half"></i> @booking.BookedDurationMinutes min</span>
+                            <span><i class="fa-solid fa-tag"></i> @($"R{booking.BookedAmount:0.00}")</span>
+                        </div>
+                        @if (booking.BookedIncludesHerbalTea)
+                        {
+                            <div class="spa-tea-note"><i class="fa-solid fa-mug-hot"></i> Complimentary herbal tea included.</div>
+                        }
+                        <div class="d-flex gap-2 flex-wrap mt-3">
+                            <a asp-page="/Bookings/Invoice" asp-route-id="@booking.Id" class="btn spa-btn-outline">
+                                <i class="fa-regular fa-file-lines"></i> View invoice
+                            </a>
+                            <a asp-page="/Bookings/Edit" asp-route-id="@booking.Id" class="btn spa-btn-outline">
+                                <i class="fa-solid fa-pen-to-square"></i> Update booking
+                            </a>
+                            <form method="post" asp-page-handler="Cancel" onsubmit="return confirm('Cancel this booking? The time slot will become available to other customers.');">
+                                <input type="hidden" name="id" value="@booking.Id" />
+                                <button type="submit" class="btn spa-btn-danger-outline"><i class="fa-regular fa-circle-xmark"></i> Cancel booking</button>
+                            </form>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="spa-section-block mt-5">
+        <div class="spa-section-heading"><h2>Booking history</h2><span>@Model.History.Count</span></div>
+        <div class="spa-table-card">
+            @if (!Model.History.Any())
+            {
+                <div class="spa-muted-box m-3">No booking history yet.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table spa-table align-middle mb-0">
+                        <thead>
+                            <tr><th>Treatment</th><th>Date</th><th>Time</th><th>Status</th><th>Reference</th><th>Invoice</th></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var booking in Model.History)
+                        {
+                            <tr>
+                                <td><span class="spa-table-service-dot" style="background:@booking.SpaService.ColorHex"></span>@booking.BookedServiceName</td>
+                                <td>@booking.StartLocal.ToString("dd MMM yyyy")</td>
+                                <td>@booking.StartLocal.ToString("HH:mm")</td>
+                                <td><span class="spa-status-pill status-@booking.Status.ToString().ToLowerInvariant()">@booking.Status</span></td>
+                                <td class="text-muted">@booking.ReferenceNumber</td>
+                                <td><a asp-page="/Bookings/Invoice" asp-route-id="@booking.Id" class="spa-text-link">View invoice</a></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </section>
+</div>

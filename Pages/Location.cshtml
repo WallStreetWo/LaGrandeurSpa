@@ -1,0 +1,99 @@
+@page
+@model LaGrandeurSpa.Web.Pages.LocationModel
+@{
+    ViewData["Title"] = "Find us";
+}
+
+<div class="spa-content-shell spa-location-shell">
+    <div class="spa-page-heading-row">
+        <div>
+            <span class="spa-kicker">VISIT LA GRANDEUR SPA</span>
+            <h1>Find your way to calm.</h1>
+            <p>Open the map, get turn-by-turn directions or use your current location when your browser allows it.</p>
+        </div>
+    </div>
+
+    <div class="spa-location-grid">
+        <section class="spa-panel spa-location-card">
+            <span class="spa-kicker">OUR LOCATION</span>
+            <h2>@Model.BusinessName</h2>
+            <div class="spa-location-address"><i class="fa-solid fa-location-dot me-2"></i>@Model.Address</div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.CellPhone))
+            {
+                <p class="mb-4"><i class="fa-solid fa-phone me-2"></i><strong>@Model.CellPhone</strong></p>
+            }
+
+            <div class="spa-location-actions">
+                <button type="button" id="geoDirectionsBtn" class="btn spa-btn-primary">
+                    <i class="fa-solid fa-location-crosshairs"></i> Use my location
+                </button>
+                <a href="@Model.MapsDirectionsUrl" target="_blank" rel="noopener" class="btn spa-btn-outline">
+                    <i class="fa-solid fa-diamond-turn-right"></i> Get directions
+                </a>
+                <a href="@Model.MapsSearchUrl" target="_blank" rel="noopener" class="btn spa-btn-outline">
+                    <i class="fa-brands fa-google"></i> Open in Google Maps
+                </a>
+                @if (!string.IsNullOrWhiteSpace(Model.CellPhone))
+                {
+                    <a href="@Model.TelephoneUrl" class="btn spa-btn-outline"><i class="fa-solid fa-phone"></i> Call spa</a>
+                }
+            </div>
+
+            <div id="geoStatus" class="spa-location-note" aria-live="polite">
+                On secure HTTPS connections, “Use my location” can build directions from your precise device location. On HTTP, we safely fall back to Google Maps directions.
+            </div>
+        </section>
+
+        <section class="spa-panel spa-map-card" aria-label="Map showing La Grandeur Spa">
+            <iframe
+                src="@Model.MapEmbedUrl"
+                loading="lazy"
+                allowfullscreen
+                referrerpolicy="no-referrer-when-downgrade"
+                title="Map to La Grandeur Spa"></iframe>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(() => {
+    const button = document.getElementById('geoDirectionsBtn');
+    const status = document.getElementById('geoStatus');
+    const destination = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MapDestination));
+    const fallbackUrl = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MapsDirectionsUrl));
+
+    button?.addEventListener('click', () => {
+        if (!navigator.geolocation || !window.isSecureContext) {
+            status.textContent = 'Precise browser geolocation needs HTTPS on most phones and browsers. Opening Google Maps directions instead.';
+            window.open(fallbackUrl, '_blank', 'noopener');
+            return;
+        }
+
+        button.disabled = true;
+        status.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Getting your current location…';
+        const mapsWindow = window.open('', '_blank');
+
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const origin = `${position.coords.latitude},${position.coords.longitude}`;
+                const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+                status.textContent = 'Location found. Opening directions from where you are now.';
+                button.disabled = false;
+                if (mapsWindow) mapsWindow.location.href = url;
+                else window.location.href = url;
+            },
+            error => {
+                console.warn('Geolocation unavailable:', error);
+                status.textContent = 'We could not access your precise location. Opening Google Maps so you can continue with directions.';
+                button.disabled = false;
+                if (mapsWindow) mapsWindow.location.href = fallbackUrl;
+                else window.location.href = fallbackUrl;
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    });
+})();
+</script>
+}

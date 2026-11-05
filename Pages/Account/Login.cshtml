@@ -1,0 +1,87 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Welcome";
+    ViewData["HideNavigation"] = true;
+}
+
+<div class="spa-login-shell">
+    <section class="spa-login-brand-panel">
+        <div class="spa-brand-glow"></div>
+        <div class="spa-login-brand-content">
+            <img src="~/img/la-grandeur-logo.jpeg" class="spa-login-logo" alt="La Grandeur Spa" />
+            <p class="spa-kicker">LA GRANDEUR SPA</p>
+            <h1>Your time to <em>unwind.</em></h1>
+            <p class="spa-login-copy">Book your treatment, choose an available time and keep every appointment in one calm, beautiful place.</p>
+            <div class="spa-login-points">
+                <span><i class="fa-regular fa-calendar-check"></i> Live availability</span>
+                <span><i class="fa-regular fa-bell"></i> Booking notifications</span>
+                <span><i class="fa-solid fa-leaf"></i> Relax. Rejuvenate. Renew.</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="spa-login-form-panel">
+        <div class="spa-auth-card">
+            <div class="spa-auth-heading">
+                <span class="spa-kicker">WELCOME BACK</span>
+                <h2>Sign in to book</h2>
+                <p>Use your La Grandeur Spa account to manage your appointments.</p>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+            {
+                <div class="spa-toast-message success"><i class="fa-solid fa-circle-check"></i><span>@Model.StatusMessage</span></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <div class="alert spa-alert-danger">@Model.ErrorMessage</div>
+            }
+
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div class="mb-3">
+                    <label asp-for="Input.Email" class="form-label">Email address</label>
+                    <div class="spa-input-wrap">
+                        <i class="fa-regular fa-envelope"></i>
+                        <input asp-for="Input.Email" class="form-control spa-input" autocomplete="username" placeholder="you@example.com" />
+                    </div>
+                    <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Input.Password" class="form-label">Password</label>
+                    <div class="spa-input-wrap spa-password-wrap">
+                        <i class="fa-solid fa-lock"></i>
+                        <input asp-for="Input.Password" type="password" class="form-control spa-input" autocomplete="current-password" />
+                        <button type="button" class="spa-password-toggle js-password-toggle" data-password-target="Input_Password" aria-label="Show password" title="Show password"><i class="fa-regular fa-eye"></i></button>
+                    </div>
+                    <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
+                    <label class="form-check-label d-flex align-items-center gap-2">
+                        <input asp-for="Input.RememberMe" class="form-check-input m-0" />
+                        Remember me
+                    </label>
+                    <div class="d-flex gap-3 flex-wrap justify-content-end">
+                        <a asp-page="/Account/ForgotPassword" class="spa-text-link">Forgot password?</a>
+                        <a asp-page="/Account/Register" class="spa-text-link">Create an account</a>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn spa-btn-primary w-100">Sign in</button>
+            </form>
+
+            <div class="spa-auth-footnote">
+                <i class="fa-solid fa-seedling"></i>
+                New here? <a asp-page="/Account/Register">Register before making your first booking.</a>
+                <span class="d-block mt-2"><i class="fa-solid fa-location-dot"></i> <a asp-page="/Location">Find La Grandeur Spa</a></span>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

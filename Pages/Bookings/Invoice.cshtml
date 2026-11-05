@@ -1,0 +1,131 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Bookings.InvoiceModel
+@{
+    ViewData["Title"] = "Invoice";
+    var booking = Model.Booking;
+    var invoiceNumber = !string.IsNullOrWhiteSpace(booking.InvoiceNumber)
+        ? booking.InvoiceNumber
+        : $"INV-{booking.ReferenceNumber.Replace("LG-", string.Empty)}";
+}
+
+<div class="invoice-toolbar no-print">
+    @if (Model.IsAdmin)
+    {
+        <a asp-page="/Admin/Bookings/Index" class="invoice-back"><i class="fa-solid fa-arrow-left"></i> Back to bookings</a>
+    }
+    else
+    {
+        <a asp-page="/Bookings/Index" class="invoice-back"><i class="fa-solid fa-arrow-left"></i> My bookings</a>
+    }
+    <button type="button" onclick="window.print()" class="invoice-print">
+        <i class="fa-solid fa-print"></i> Print / Save PDF
+    </button>
+</div>
+
+<article class="lg-invoice">
+    <header class="invoice-header">
+        <div class="invoice-brand">
+            <div class="invoice-logo">
+                <img src="~/img/la-grandeur-logo.jpeg" alt="La Grandeur Spa" />
+            </div>
+            <div>
+                <h2>LA GRANDEUR</h2>
+                <span>S P A</span>
+            </div>
+        </div>
+        <h1>INVOICE</h1>
+        <p>Relax. Rejuvenate. Renew.</p>
+    </header>
+
+    <section class="invoice-top">
+        <div class="invoice-customer">
+            <span class="invoice-label">ISSUED TO</span>
+            <h3>@booking.Customer.FullName</h3>
+            <p>@booking.Customer.Email</p>
+            @if (!string.IsNullOrWhiteSpace(booking.Customer.MobileNumber))
+            {
+                <p>@booking.Customer.MobileNumber</p>
+            }
+        </div>
+
+        <div class="invoice-business">
+            <span class="invoice-label">FROM</span>
+            <h3>@Model.BusinessName</h3>
+            <p>@Model.BusinessTagline</p>
+            <div class="invoice-business-details">
+                @if (!string.IsNullOrWhiteSpace(Model.BusinessPhone))
+                {
+                    <p><i class="fa-solid fa-phone"></i> @Model.BusinessPhone</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.BusinessAddress))
+                {
+                    <p><i class="fa-solid fa-location-dot"></i> @Model.BusinessAddress</p>
+                }
+            </div>
+        </div>
+
+        <div class="invoice-meta">
+            <div><span>Invoice No.</span><strong>@invoiceNumber</strong></div>
+            <div><span>Invoice Date</span><strong>@Model.InvoiceIssuedLocal.ToString("dd MMM yyyy")</strong></div>
+            <div><span>Booking Ref.</span><strong>@booking.ReferenceNumber</strong></div>
+            <div><span>Appointment</span><strong>@booking.StartLocal.ToString("dd MMM yyyy")</strong></div>
+            <div><span>Time</span><strong>@booking.StartLocal.ToString("HH:mm") – @booking.EndLocal.ToString("HH:mm")</strong></div>
+            <div><span>Status</span><strong class="invoice-status status-@booking.Status.ToString().ToLowerInvariant()">@booking.Status</strong></div>
+        </div>
+    </section>
+
+    <section class="invoice-items">
+        <div class="invoice-table-head">
+            <span>Description</span><span>Duration</span><span>Qty</span><span>Unit Price</span><span>Total</span>
+        </div>
+        <div class="invoice-table-row">
+            <div>
+                <strong>@booking.BookedServiceName</strong>
+                @if (booking.BookedIncludesHerbalTea)
+                {
+                    <small>Complimentary herbal tea included</small>
+                }
+            </div>
+            <span data-label="Duration">@booking.BookedDurationMinutes min</span>
+            <span data-label="Qty">1</span>
+            <span data-label="Unit Price">@($"R{booking.BookedAmount:0.00}")</span>
+            <strong data-label="Total">@($"R{booking.BookedAmount:0.00}")</strong>
+        </div>
+    </section>
+
+    <section class="invoice-total">
+        <div><span>SUBTOTAL</span><strong>@($"R{booking.BookedAmount:0.00}")</strong></div>
+        <div class="invoice-grand-total"><span>TOTAL</span><strong>@($"R{booking.BookedAmount:0.00}")</strong></div>
+    </section>
+
+    <section class="invoice-payment-location-grid">
+        <div class="invoice-info-card">
+            <h4><i class="fa-solid fa-building-columns"></i> Payment details</h4>
+            <div class="invoice-info-row"><span>Bank</span><strong>@Model.BankName</strong></div>
+            <div class="invoice-info-row"><span>Account number</span><strong>@Model.BankAccountNumber</strong></div>
+            <div class="invoice-info-row"><span>Payment reference</span><strong>@booking.ReferenceNumber</strong></div>
+        </div>
+        <div class="invoice-info-card">
+            <h4><i class="fa-solid fa-location-dot"></i> Visit us</h4>
+            <div class="invoice-info-row"><span>Address</span><strong>@Model.BusinessAddress</strong></div>
+            @if (!string.IsNullOrWhiteSpace(Model.BusinessPhone))
+            {
+                <div class="invoice-info-row"><span>Cell</span><strong>@Model.BusinessPhone</strong></div>
+            }
+            <a href="@Model.MapsUrl" target="_blank" rel="noopener" class="invoice-map-link no-print"><i class="fa-solid fa-map-location-dot"></i> Open address in Google Maps</a>
+        </div>
+    </section>
+
+    <section class="invoice-note">
+        <strong>Please note</strong>
+        <p>Kindly arrive at least 10 minutes before your appointment.</p>
+        <p>Please use your booking reference as the payment reference.</p>
+        <p>You can update an eligible upcoming booking from My Bookings without cancelling it first.</p>
+    </section>
+
+    <footer class="invoice-footer">
+        <h3>Thank you for choosing La Grandeur Spa ♥</h3>
+        <p>RELAX · REJUVENATE · RENEW</p>
+        <small>This invoice reflects the latest saved details for this booking.</small>
+    </footer>
+</article>

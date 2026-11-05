@@ -1,0 +1,162 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Bookings.EditModel
+@{
+    ViewData["Title"] = "Update booking";
+}
+
+<div class="spa-content-shell spa-edit-booking-shell">
+    <div class="spa-page-heading-row">
+        <div>
+            <span class="spa-kicker">CHANGE OF PLANS?</span>
+            <h1>Update your booking</h1>
+            <p>Change your treatment, date, time or notes without cancelling and starting again.</p>
+        </div>
+        <a asp-page="/Bookings/Index" class="btn spa-btn-outline"><i class="fa-solid fa-arrow-left"></i> My Bookings</a>
+    </div>
+
+    <section class="spa-panel spa-edit-booking-card">
+        <div class="spa-edit-booking-current">
+            <span><i class="fa-solid fa-hashtag"></i> @Model.Booking.ReferenceNumber</span>
+            <span><i class="fa-solid fa-circle-info"></i> @Model.Booking.Status</span>
+            <span><i class="fa-regular fa-calendar"></i> @Model.Booking.StartLocal.ToString("dd MMM yyyy HH:mm")</span>
+        </div>
+
+        @if (Model.Booking.Status == LaGrandeurSpa.Web.Models.BookingStatus.Confirmed)
+        {
+            <div class="spa-edit-warning mb-4">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                Changing the treatment, date or time of a confirmed booking will send it back to <strong>Pending</strong> so Kea can confirm the revised appointment. Changing only your note will keep the current status.
+            </div>
+        }
+
+        <form method="post">
+            <input asp-for="Input.Id" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label asp-for="Input.SpaServiceId" class="form-label">Treatment</label>
+                    <select asp-for="Input.SpaServiceId" id="editService" class="form-select spa-select" required>
+                        @foreach (var service in Model.Services)
+                        {
+                            <option value="@service.Id"
+                                    data-duration="@service.DurationMinutes"
+                                    data-price="@service.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-tea="@service.IncludesHerbalTea.ToString().ToLowerInvariant()">
+                                @service.DisplayName
+                            </option>
+                        }
+                    </select>
+                    <span asp-validation-for="Input.SpaServiceId" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Input.Date" class="form-label">Date</label>
+                    <input asp-for="Input.Date" id="editDate" type="date" min="@Model.TodayLocal.ToString("yyyy-MM-dd")" class="form-control spa-input" required />
+                    <span asp-validation-for="Input.Date" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Input.StartTime" class="form-label">Available time</label>
+                    <select asp-for="Input.StartTime" id="editTime" class="form-select spa-select" required>
+                        <option value="">Checking availability…</option>
+                    </select>
+                    <div id="editSlotLoading" class="spa-field-help d-none"><i class="fa-solid fa-spinner fa-spin"></i> Checking live availability…</div>
+                    <span asp-validation-for="Input.StartTime" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <div id="editSummary" class="spa-booking-summary"></div>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Input.CustomerNote" class="form-label">Anything Kea should know? <span class="text-muted">(optional)</span></label>
+                    <textarea asp-for="Input.CustomerNote" class="form-control spa-input" rows="3" maxlength="1000"></textarea>
+                    <span asp-validation-for="Input.CustomerNote" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap mt-4">
+                <button type="submit" class="btn spa-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save booking changes</button>
+                <a asp-page="/Bookings/Index" class="btn spa-btn-ghost">Keep booking as it is</a>
+            </div>
+        </form>
+    </section>
+</div>
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(() => {
+    const bookingId = @Model.Booking.Id;
+    const originalTime = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Input.StartTime));
+    const serviceSelect = document.getElementById('editService');
+    const dateInput = document.getElementById('editDate');
+    const timeSelect = document.getElementById('editTime');
+    const loading = document.getElementById('editSlotLoading');
+    const summary = document.getElementById('editSummary');
+    let requestId = 0;
+    let preserveInitial = true;
+
+    function escapeHtml(value) {
+        const el = document.createElement('div');
+        el.textContent = value ?? '';
+        return el.innerHTML;
+    }
+
+    async function loadSlots() {
+        const id = ++requestId;
+        const serviceId = serviceSelect.value;
+        const date = dateInput.value;
+        const selectedBeforeLoad = preserveInitial ? originalTime : timeSelect.value;
+        preserveInitial = false;
+        timeSelect.innerHTML = '<option value="">Checking availability…</option>';
+        loading.classList.remove('d-none');
+
+        try {
+            const url = `@Url.Page("/Bookings/Edit", "Availability")&id=${bookingId}&serviceId=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+            if (!response.ok) throw new Error(`Availability request failed with ${response.status}`);
+            const slots = await response.json();
+            if (id !== requestId) return;
+
+            timeSelect.innerHTML = slots.length
+                ? '<option value="">Choose a time</option>' + slots.map(x => `<option value="${escapeHtml(x.value)}">${escapeHtml(x.label)}</option>`).join('')
+                : '<option value="">No available slots for this date</option>';
+
+            if (slots.some(x => x.value === selectedBeforeLoad))
+                timeSelect.value = selectedBeforeLoad;
+        } catch (error) {
+            if (id !== requestId) return;
+            console.error(error);
+            timeSelect.innerHTML = '<option value="">Could not load availability — please try again</option>';
+        } finally {
+            if (id === requestId) loading.classList.add('d-none');
+        }
+
+        updateSummary();
+    }
+
+    function updateSummary() {
+        const option = serviceSelect.selectedOptions[0];
+        if (!option || !option.value || !dateInput.value || !timeSelect.value) {
+            summary.innerHTML = '<span class="text-muted">Choose an available date and time to preview the updated appointment.</span>';
+            return;
+        }
+
+        const price = Number.parseFloat(option.dataset.price || '0');
+        const safePrice = Number.isFinite(price) ? price : 0;
+        const duration = option.dataset.duration || '';
+        const tea = option.dataset.tea === 'true';
+        const serviceName = escapeHtml(option.textContent.split(' · ')[0].trim());
+
+        summary.innerHTML = `<div><span>Updated appointment</span><strong>${serviceName}</strong></div><div><span>When</span><strong>${escapeHtml(dateInput.value)} at ${escapeHtml(timeSelect.value)}</strong></div><div><span>Duration</span><strong>${escapeHtml(duration)} min</strong></div><div><span>Price</span><strong>R${safePrice.toFixed(0)}</strong></div>${tea ? '<p><i class="fa-solid fa-mug-hot"></i> Complimentary herbal tea included.</p>' : ''}`;
+    }
+
+    serviceSelect.addEventListener('change', loadSlots);
+    dateInput.addEventListener('change', loadSlots);
+    timeSelect.addEventListener('change', updateSummary);
+    loadSlots();
+})();
+</script>
+}

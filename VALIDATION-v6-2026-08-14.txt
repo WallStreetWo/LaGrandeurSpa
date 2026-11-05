@@ -1,0 +1,40 @@
+La Grandeur Spa v6 User Feedback Release — Static Validation
+Date: 2026-08-14
+
+PASS — appsettings.json parses as JSON
+PASS — appsettings.Development.json parses as JSON
+PASS — LaGrandeurSpa.Web.csproj parses as XML
+PASS — C# lexical delimiter/string/comment balance scan
+PASS — site.js passes node --check
+PASS — CSS brace balance
+PASS — build-deployment.sh passes bash -n
+PASS — no owned DateTime.Now / DateTime.Today / .ToLocalTime() regressions
+PASS — known prior local SQL password is not present in source
+PASS — password reset, password change, booking edit, location and new email-template files exist
+PASS — login password toggle / forgot-password hooks present
+PASS — registration welcome email hook present
+PASS — password-changed email hook present
+PASS — booking-updated email hook present
+PASS — geolocation/location page hook present
+PASS — no database schema change required for this release
+
+IMPORTANT LIMITATION
+The ChatGPT runtime used for this packaging does not have the .NET SDK installed, so a real `dotnet build` could not be run here. Before deployment, run locally:
+
+  dotnet clean
+  dotnet restore
+  dotnet build LaGrandeurSpa.Web.csproj -c Release
+  dotnet publish LaGrandeurSpa.Web.csproj -c Release -o ./publish-v6
+
+Do not deploy if the local build reports an error.
+C# lexical balance scan PASS (44 files)
+
+Feature inventory checked:
+- Password show/hide controls
+- Forgot/reset password with time-limited, password-bound reset tokens
+- Account-created welcome email
+- Password-changed in-app + email notification
+- Customer booking edit/reschedule with existing overlap/slot protections
+- Confirmed detail edits return to Pending for Kea re-confirmation
+- Invoice payment/contact/location block
+- Public location page with Google Maps and HTTPS-aware browser geolocation

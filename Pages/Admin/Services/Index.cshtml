@@ -1,0 +1,41 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Admin.Services.IndexModel
+@{
+    ViewData["Title"] = "Services";
+}
+<div class="spa-content-shell">
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage)) { <div class="spa-toast-message success"><i class="fa-solid fa-circle-check"></i><span>@Model.StatusMessage</span></div> }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="spa-toast-message danger"><i class="fa-solid fa-circle-exclamation"></i><span>@Model.ErrorMessage</span></div> }
+
+    <div class="spa-page-heading-row"><div><span class="spa-kicker">PRICE & TREATMENT MENU</span><h1>Services</h1><p>Manage the treatments customers can choose when they click Book now.</p></div><button class="btn spa-btn-primary" data-bs-toggle="modal" data-bs-target="#newServiceModal"><i class="fa-solid fa-plus"></i> Add service</button></div>
+
+    <div class="spa-service-admin-grid">
+        @foreach (var service in Model.Items)
+        {
+            <form method="post" asp-page-handler="Update" class="spa-card spa-service-admin-card" style="--service-color:@service.ColorHex">
+                <input type="hidden" name="id" value="@service.Id" />
+                <div class="spa-service-admin-accent"></div>
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-3"><span class="spa-status-pill @(service.IsActive ? "status-confirmed" : "status-cancelled")">@(service.IsActive ? "Active" : "Hidden")</span><input type="color" name="colorHex" value="@service.ColorHex" class="spa-color-input" title="Calendar colour" /></div>
+                <label class="form-label">Treatment</label><input name="name" value="@service.Name" class="form-control spa-input mb-3" minlength="2" maxlength="180" required />
+                <div class="row g-3">
+                    <div class="col-6"><label class="form-label">Duration</label><div class="input-group"><input type="number" name="durationMinutes" value="@service.DurationMinutes" min="@Model.MinimumServiceDuration" max="480" step="@Model.SlotIntervalMinutes" class="form-control spa-input" /><span class="input-group-text">min</span></div></div>
+                    <div class="col-6"><label class="form-label">Price</label><div class="input-group"><span class="input-group-text">R</span><input type="number" name="price" value="@service.Price.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" min="0" max="100000" step="0.01" class="form-control spa-input" /></div></div>
+                </div>
+                <div class="d-flex flex-wrap gap-3 mt-3">
+                    <label class="form-check-label"><input type="checkbox" class="form-check-input" name="isActive" value="true" checked="@service.IsActive" /><input type="hidden" name="isActive" value="false" /> Available to book</label>
+                    <label class="form-check-label"><input type="checkbox" class="form-check-input" name="includesHerbalTea" value="true" checked="@service.IncludesHerbalTea" /><input type="hidden" name="includesHerbalTea" value="false" /> Herbal tea offer</label>
+                </div>
+                <button class="btn spa-btn-outline w-100 mt-3" type="submit">Save changes</button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="newServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content spa-modal"><div class="modal-header"><div><span class="spa-kicker">NEW TREATMENT</span><h2 class="modal-title">Add service</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="post" asp-page-handler="Add"><div class="modal-body">
+        <div class="mb-3"><label asp-for="NewService.Name" class="form-label">Treatment name</label><input asp-for="NewService.Name" class="form-control spa-input" /></div>
+        <div class="row g-3"><div class="col-6"><label asp-for="NewService.DurationMinutes" class="form-label">Duration (min)</label><input asp-for="NewService.DurationMinutes" type="number" min="@Model.MinimumServiceDuration" max="480" step="@Model.SlotIntervalMinutes" class="form-control spa-input" /></div><div class="col-6"><label asp-for="NewService.Price" class="form-label">Price (R)</label><input asp-for="NewService.Price" type="number" min="0" max="100000" step="0.01" class="form-control spa-input" /></div></div>
+        <div class="row g-3 mt-0"><div class="col-6"><label asp-for="NewService.ColorHex" class="form-label">Calendar colour</label><input asp-for="NewService.ColorHex" type="color" class="form-control form-control-color spa-color-input" /></div><div class="col-6 d-flex align-items-end"><label class="form-check-label mb-2"><input asp-for="NewService.IncludesHerbalTea" class="form-check-input" /> Herbal tea offer</label></div></div>
+    </div><div class="modal-footer"><button class="btn spa-btn-ghost" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn spa-btn-primary" type="submit">Add service</button></div></form></div></div>
+</div>

@@ -1,0 +1,22 @@
+@page
+@model LaGrandeurSpa.Web.Pages.ErrorModel
+@{
+    ViewData["Title"] = "Something went wrong";
+    ViewData["HideNavigation"] = true;
+}
+<div class="spa-empty-state">
+    <i class="fa-solid fa-seedling"></i>
+    <h1>We hit a small snag.</h1>
+    <p>Please try again. If the problem continues, contact the La Grandeur Spa administrator.</p>
+    @if (Model.ShowRequestId) { <small class="text-muted">Request ID: @Model.RequestId</small> }
+    <div class="mt-3">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-page="/Index" class="btn spa-btn-primary">Return to dashboard</a>
+        }
+        else
+        {
+            <a asp-page="/Account/Login" class="btn spa-btn-primary">Return to sign in</a>
+        }
+    </div>
+</div>

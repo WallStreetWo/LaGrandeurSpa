@@ -1,0 +1,91 @@
+@using System.Security.Claims
+@using LaGrandeurSpa.Web.Models
+@{
+    var hideNav = ViewData["HideNavigation"] as bool? == true;
+    var isAdmin = User?.Identity?.IsAuthenticated == true && User.IsInRole(nameof(AppUserRole.Admin));
+    var homePage = isAdmin ? "/Admin/Dashboard/Index" : "/Index";
+    var name = User?.FindFirst(ClaimTypes.Name)?.Value;
+    name = string.IsNullOrWhiteSpace(name) ? "Guest" : name.Trim();
+    var initial = char.ToUpperInvariant(name[0]).ToString();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#626546" />
+    <title>@ViewData["Title"] - La Grandeur Spa</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+@if (!hideNav)
+{
+    <header class="spa-header">
+        <nav class="navbar navbar-expand-lg spa-navbar">
+            <div class="container-fluid spa-nav-container">
+                <a class="spa-brand" asp-page="@homePage">
+                    <img src="~/img/la-grandeur-logo.jpeg" alt="La Grandeur Spa" />
+                    <span>
+                        <strong>La Grandeur</strong>
+                        <small>SPA</small>
+                    </span>
+                </a>
+                <button class="navbar-toggler spa-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#spaNav" aria-controls="spaNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="spaNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 spa-main-nav">
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            @if (isAdmin)
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-page="/Admin/Dashboard/Index">Dashboard</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-page="/Admin/Bookings/Index">Bookings</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-page="/Admin/Availability/Index">Availability</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-page="/Admin/Services/Index">Services</a></li>
+                            }
+                            else
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-page="/Index">Calendar</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-page="/Bookings/Index">My Bookings</a></li>
+                            }
+                            <li class="nav-item"><a class="nav-link" asp-page="/Location">Find us</a></li>
+                        }
+                    </ul>
+                    @if (User?.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="spa-nav-actions">
+                            <a class="spa-bell" asp-page="/Notifications/Index" aria-label="Notifications">
+                                <i class="fa-regular fa-bell"></i>
+                                @await Component.InvokeAsync("NotificationBell")
+                            </a>
+                            <a class="spa-user-chip spa-user-chip-link" asp-page="/Account/ChangePassword" title="Account security">
+                                <span class="spa-user-avatar">@initial</span>
+                                <span class="spa-user-name">@name</span>
+                                <i class="fa-solid fa-gear small"></i>
+                            </a>
+                            <form method="post" asp-page="/Account/Logout">
+                                <button type="submit" class="btn spa-btn-outline spa-logout-btn"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Logout</span></button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        </nav>
+    </header>
+}
+
+<div class="@(hideNav ? "" : "spa-page-shell")">
+    <main role="main">
+        @RenderBody()
+    </main>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

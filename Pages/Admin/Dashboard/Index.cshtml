@@ -1,0 +1,110 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Admin.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    var firstDay = new DateTime(Model.Year, Model.Month, 1);
+    var previous = firstDay.AddMonths(-1);
+    var next = firstDay.AddMonths(1);
+    var leading = (int)firstDay.DayOfWeek;
+    var daysInMonth = DateTime.DaysInMonth(Model.Year, Model.Month);
+}
+<div class="spa-content-shell">
+    <section class="spa-dashboard-hero admin-hero">
+        <div>
+            <span class="spa-kicker">LA GRANDEUR · ADMIN</span>
+            <h1>Good to see you, <em>@Model.AdminName.</em></h1>
+            <p>Everything happening in the spa today, at a glance.</p>
+        </div>
+        <a asp-page="/Admin/Bookings/Index" asp-route-status="Pending" class="btn spa-btn-primary"><i class="fa-solid fa-list-check"></i> Review pending</a>
+    </section>
+
+    <div class="spa-stat-grid">
+        <a asp-page="/Admin/Bookings/Index" asp-route-status="Pending" class="spa-stat-card">
+            <span class="spa-stat-icon"><i class="fa-regular fa-clock"></i></span>
+            <div><small>Awaiting confirmation</small><strong>@Model.PendingCount</strong></div>
+        </a>
+        <a asp-page="/Admin/Bookings/Index" asp-route-date="@Model.TodayLocal.ToString("yyyy-MM-dd")" class="spa-stat-card">
+            <span class="spa-stat-icon"><i class="fa-regular fa-calendar-check"></i></span>
+            <div><small>Appointments today</small><strong>@Model.TodayCount</strong></div>
+        </a>
+        <div class="spa-stat-card">
+            <span class="spa-stat-icon"><i class="fa-solid fa-leaf"></i></span>
+            <div><small>Confirmed next 7 days</small><strong>@Model.ConfirmedThisWeek</strong></div>
+        </div>
+        <div class="spa-stat-card">
+            <span class="spa-stat-icon"><i class="fa-solid fa-users"></i></span>
+            <div><small>Registered customers</small><strong>@Model.CustomerCount</strong></div>
+        </div>
+    </div>
+
+    <div class="spa-admin-dashboard-grid">
+        <section class="spa-card">
+            <div class="spa-card-heading">
+                <div><span class="spa-kicker">TODAY</span><h2>Appointment list</h2></div>
+                <a asp-page="/Admin/Bookings/Index" class="spa-text-link">View all bookings</a>
+            </div>
+            @if (!Model.TodayBookings.Any())
+            {
+                <div class="spa-empty-state compact"><i class="fa-solid fa-spa"></i><h3>A quiet day</h3><p>No appointments are booked for today.</p></div>
+            }
+            else
+            {
+                <div class="spa-today-list">
+                    @foreach (var booking in Model.TodayBookings)
+                    {
+                        <div class="spa-today-row">
+                            <div class="spa-today-time">@booking.StartLocal.ToString("HH:mm")</div>
+                            <span class="spa-schedule-color" style="background:@booking.SpaService.ColorHex"></span>
+                            <div class="spa-today-info">
+                                <strong>@booking.BookedServiceName</strong>
+                                <small>@booking.Customer.FullName · @booking.BookedDurationMinutes min</small>
+                            </div>
+                            <span class="spa-status-pill status-@booking.Status.ToString().ToLowerInvariant()">@booking.Status</span>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
+        <aside class="spa-card spa-admin-quick-actions">
+            <div class="spa-card-heading"><div><span class="spa-kicker">CONTROL CENTRE</span><h2>Quick actions</h2></div></div>
+            <a asp-page="/Admin/Bookings/Index" asp-route-status="Pending"><i class="fa-solid fa-check-double"></i><span><strong>Confirm bookings</strong><small>Review new requests from customers.</small></span><i class="fa-solid fa-chevron-right"></i></a>
+            <a asp-page="/Admin/Availability/Index"><i class="fa-regular fa-calendar-xmark"></i><span><strong>Block time</strong><small>Close a period or change opening hours.</small></span><i class="fa-solid fa-chevron-right"></i></a>
+            <a asp-page="/Admin/Services/Index"><i class="fa-solid fa-spa"></i><span><strong>Manage services</strong><small>Prices, durations, colours and availability.</small></span><i class="fa-solid fa-chevron-right"></i></a>
+        </aside>
+    </div>
+
+    <section class="spa-card spa-admin-calendar mt-4">
+        <div class="spa-calendar-toolbar">
+            <div><span class="spa-kicker">FULL CALENDAR</span><h2>@firstDay.ToString("MMMM yyyy")</h2></div>
+            <div class="spa-calendar-nav">
+                <a asp-page="/Admin/Dashboard/Index" asp-route-year="@previous.Year" asp-route-month="@previous.Month" class="spa-icon-btn"><i class="fa-solid fa-chevron-left"></i></a>
+                <a asp-page="/Admin/Dashboard/Index" class="spa-today-link">Today</a>
+                <a asp-page="/Admin/Dashboard/Index" asp-route-year="@next.Year" asp-route-month="@next.Month" class="spa-icon-btn"><i class="fa-solid fa-chevron-right"></i></a>
+            </div>
+        </div>
+        <div class="spa-calendar-weekdays">
+            @foreach (var dayName in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }) { <div>@dayName</div> }
+        </div>
+        <div class="spa-calendar-grid admin-calendar-grid">
+            @for (var i = 0; i < leading; i++) { <div class="spa-calendar-day is-empty"></div> }
+            @for (var day = 1; day <= daysInMonth; day++)
+            {
+                var date = new DateTime(Model.Year, Model.Month, day);
+                var events = Model.BookingsForDay(date).ToList();
+                <a asp-page="/Admin/Bookings/Index" asp-route-date="@date.ToString("yyyy-MM-dd")" class="spa-calendar-day">
+                    <div class="spa-calendar-day-number">@day</div>
+                    <div class="spa-calendar-events">
+                        @foreach (var booking in events.Take(4))
+                        {
+                            <span class="spa-calendar-event admin-event" style="--event-color:@booking.SpaService.ColorHex" title="@booking.Customer.FullName · @booking.BookedServiceName">
+                                <i></i><span>@booking.StartLocal.ToString("HH:mm") @booking.Customer.FullName</span>
+                            </span>
+                        }
+                        @if (events.Count > 4) { <small>+@(events.Count - 4) more</small> }
+                    </div>
+                </a>
+            }
+        </div>
+    </section>
+</div>

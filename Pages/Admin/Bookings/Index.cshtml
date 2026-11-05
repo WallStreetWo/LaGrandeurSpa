@@ -1,0 +1,194 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Admin.Bookings.IndexModel
+@{
+    ViewData["Title"] = "Manage Bookings";
+}
+<div class="spa-content-shell">
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="spa-toast-message success"><i class="fa-solid fa-circle-check"></i><span>@Model.StatusMessage</span></div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="spa-toast-message danger"><i class="fa-solid fa-circle-exclamation"></i><span>@Model.ErrorMessage</span></div>
+    }
+
+    <div class="spa-page-heading-row">
+        <div>
+            <span class="spa-kicker">MAVIS · BOOKING DESK</span>
+            <h1>Manage Bookings</h1>
+            <p>Confirm new appointments, complete visits and release cancelled time slots.</p>
+        </div>
+    </div>
+
+    <form method="get" class="spa-filter-bar">
+        <div>
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select spa-select">
+                @foreach (var status in new[] { "Active", "Pending", "Confirmed", "Completed", "Cancelled", "Declined", "All" })
+                {
+                    <option value="@status" selected="@(status == Model.StatusFilter)">@status</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label">Date</label>
+            <input type="date" name="date" value="@(Model.DateFilter?.ToString("yyyy-MM-dd"))" class="form-control spa-input" />
+        </div>
+        <button class="btn spa-btn-primary align-self-end" type="submit"><i class="fa-solid fa-filter"></i> Apply</button>
+        <a asp-page="/Admin/Bookings/Index" class="btn spa-btn-ghost align-self-end">Clear</a>
+    </form>
+
+    <div class="spa-admin-booking-list">
+        @if (!Model.Items.Any())
+        {
+            <div class="spa-empty-state compact">
+                <i class="fa-regular fa-calendar-check"></i>
+                <h2>No bookings found</h2>
+                <p>Try another status or date filter.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var booking in Model.Items)
+            {
+                <article class="spa-admin-booking-card" style="--service-color:@booking.SpaService.ColorHex">
+                    <div class="spa-admin-booking-time">
+                        <strong>@booking.StartLocal.ToString("HH:mm")</strong>
+                        <span>@booking.StartLocal.ToString("dd MMM")</span>
+                    </div>
+                    <div class="spa-admin-booking-main">
+                        <div class="d-flex gap-2 align-items-center flex-wrap mb-1">
+                            <span class="spa-status-pill status-@booking.Status.ToString().ToLowerInvariant()">@booking.Status</span>
+                            <small class="text-muted">@booking.ReferenceNumber</small>
+                        </div>
+                        <h2>@booking.BookedServiceName</h2>
+                        <div class="spa-admin-customer">
+                            <i class="fa-regular fa-user"></i>
+                            <strong>@booking.Customer.FullName</strong>
+                            <span>@booking.Customer.Email</span>
+                            @if (!string.IsNullOrWhiteSpace(booking.Customer.MobileNumber))
+                            {
+                                <span>· @booking.Customer.MobileNumber</span>
+                            }
+                        </div>
+                        <div class="spa-admin-booking-details">
+                            <span><i class="fa-regular fa-clock"></i> @booking.StartLocal.ToString("dddd, dd MMM yyyy") · @booking.StartLocal.ToString("HH:mm")–@booking.EndLocal.ToString("HH:mm")</span>
+                            <span><i class="fa-solid fa-hourglass-half"></i> @booking.BookedDurationMinutes min</span>
+                            <span><i class="fa-solid fa-tag"></i> @($"R{booking.BookedAmount:0.00}")</span>
+                            <a asp-page="/Bookings/Invoice" asp-route-id="@booking.Id" class="spa-text-link"><i class="fa-regular fa-file-lines"></i> Invoice</a>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(booking.CustomerNote))
+                        {
+                            <div class="spa-customer-note"><strong>Customer note:</strong> @booking.CustomerNote</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(booking.AdminNote))
+                        {
+                            <div class="spa-admin-note"><strong>Admin note:</strong> @booking.AdminNote</div>
+                        }
+                    </div>
+                    <div class="spa-admin-booking-actions">
+                        @if (booking.Status == BookingStatus.Pending)
+                        {
+                            <form method="post" asp-page-handler="Confirm">
+                                <input type="hidden" name="id" value="@booking.Id" />
+                                <button class="btn spa-btn-primary" type="submit"><i class="fa-solid fa-check"></i> Confirm</button>
+                            </form>
+                            <button type="button"
+                                    class="btn spa-btn-danger-outline"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#actionModal"
+                                    data-status="Pending"
+                                    data-id="@booking.Id"
+                                    data-name="@booking.Customer.FullName"
+                                    data-service="@booking.BookedServiceName">
+                                <i class="fa-solid fa-ban"></i> Decline
+                            </button>
+                        }
+                        @if (booking.Status == BookingStatus.Confirmed)
+                        {
+                            <form method="post" asp-page-handler="Complete">
+                                <input type="hidden" name="id" value="@booking.Id" />
+                                <button class="btn spa-btn-outline" type="submit" disabled="@(!Model.IsPast(booking))" title="@(Model.IsPast(booking) ? "Mark appointment completed" : "Available after the appointment ends")">
+                                    <i class="fa-solid fa-spa"></i> Complete
+                                </button>
+                            </form>
+                            <button type="button"
+                                    class="btn spa-btn-danger-outline"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#actionModal"
+                                    data-status="Confirmed"
+                                    data-id="@booking.Id"
+                                    data-name="@booking.Customer.FullName"
+                                    data-service="@booking.BookedServiceName">
+                                <i class="fa-solid fa-ban"></i> Cancel
+                            </button>
+                        }
+                    </div>
+                </article>
+            }
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content spa-modal">
+            <div class="modal-header">
+                <div><span class="spa-kicker">BOOKING ACTION</span><h2 class="modal-title" id="actionModalTitle">Booking action</h2></div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="actionModalText" class="mb-3"></p>
+                <label class="form-label">Reason / note <span class="text-muted">(optional)</span></label>
+                <textarea id="actionNote" class="form-control spa-input" maxlength="1000" rows="3" placeholder="This note will be included in the customer's notification and email."></textarea>
+            </div>
+            <div class="modal-footer flex-wrap">
+                <button type="button" class="btn spa-btn-ghost" data-bs-dismiss="modal">Back</button>
+                <form method="post" asp-page-handler="Decline" id="declineForm" class="d-none">
+                    <input type="hidden" name="id" class="action-id" />
+                    <input type="hidden" name="adminNote" class="action-note" />
+                    <button class="btn spa-btn-danger-outline" type="submit">Decline booking</button>
+                </form>
+                <form method="post" asp-page-handler="Cancel" id="cancelForm" class="d-none">
+                    <input type="hidden" name="id" class="action-id" />
+                    <input type="hidden" name="adminNote" class="action-note" />
+                    <button class="btn spa-btn-danger" type="submit">Cancel booking</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(() => {
+    const actionModal = document.getElementById('actionModal');
+    const declineForm = document.getElementById('declineForm');
+    const cancelForm = document.getElementById('cancelForm');
+    const note = document.getElementById('actionNote');
+
+    actionModal?.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
+        const id = button?.getAttribute('data-id') ?? '';
+        const name = button?.getAttribute('data-name') ?? '';
+        const service = button?.getAttribute('data-service') ?? '';
+        const status = button?.getAttribute('data-status') ?? '';
+
+        actionModal.querySelectorAll('.action-id').forEach(x => x.value = id);
+        document.getElementById('actionModalText').textContent = `${name} · ${service}`;
+        document.getElementById('actionModalTitle').textContent = status === 'Pending' ? 'Decline booking' : 'Cancel booking';
+        note.value = '';
+
+        declineForm.classList.toggle('d-none', status !== 'Pending');
+        cancelForm.classList.toggle('d-none', status !== 'Confirmed');
+    });
+
+    [declineForm, cancelForm].forEach(form => form?.addEventListener('submit', event => {
+        form.querySelector('.action-note').value = note.value;
+        if (!confirm('Continue with this booking action? The reserved time slot will be released.'))
+            event.preventDefault();
+    }));
+})();
+</script>
+}

@@ -1,0 +1,68 @@
+@page
+@model LaGrandeurSpa.Web.Pages.Admin.Availability.IndexModel
+@{
+    ViewData["Title"] = "Availability";
+}
+<div class="spa-content-shell">
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage)) { <div class="spa-toast-message success"><i class="fa-solid fa-circle-check"></i><span>@Model.StatusMessage</span></div> }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="spa-toast-message danger"><i class="fa-solid fa-circle-exclamation"></i><span>@Model.ErrorMessage</span></div> }
+
+    <div class="spa-page-heading-row">
+        <div><span class="spa-kicker">WHEN CUSTOMERS CAN BOOK</span><h1>Availability</h1><p>Control normal opening hours and block specific periods when the spa is unavailable.</p></div>
+    </div>
+
+    <div class="spa-two-column-admin">
+        <section class="spa-card">
+            <div class="spa-card-heading"><div><span class="spa-kicker">WEEKLY SCHEDULE</span><h2>Business hours</h2></div></div>
+            <div class="spa-hours-list">
+                @foreach (var row in Model.Hours)
+                {
+                    <form method="post" asp-page-handler="SaveHours" class="spa-hours-row">
+                        <input type="hidden" name="id" value="@row.Id" />
+                        <strong>@row.DayOfWeek</strong>
+                        <div class="spa-hours-time"><input type="time" name="openTime" value="@row.OpenTime.ToString("hh\\:mm")" class="form-control spa-input" /></div>
+                        <span>to</span>
+                        <div class="spa-hours-time"><input type="time" name="closeTime" value="@row.CloseTime.ToString("hh\\:mm")" class="form-control spa-input" /></div>
+                        <label class="form-check-label spa-closed-toggle">
+                            <input class="form-check-input" type="checkbox" name="isClosed" value="true" checked="@row.IsClosed" /><input type="hidden" name="isClosed" value="false" /> Closed
+                        </label>
+                        <button class="btn spa-btn-outline btn-sm" type="submit">Save</button>
+                    </form>
+                }
+            </div>
+            <p class="spa-field-help mt-3"><i class="fa-solid fa-circle-info"></i> These default hours are editable. Confirm La Grandeur Spa's actual trading hours before going live.</p>
+        </section>
+
+        <section class="spa-card">
+            <div class="spa-card-heading"><div><span class="spa-kicker">BLOCK TIME</span><h2>Add unavailable period</h2></div></div>
+            <form method="post" asp-page-handler="AddBlock">
+                <div class="mb-3"><label asp-for="Block.StartLocal" class="form-label">From</label><input asp-for="Block.StartLocal" type="datetime-local" min="@Model.NowLocal.ToString("yyyy-MM-ddTHH:mm")" class="form-control spa-input" required /></div>
+                <div class="mb-3"><label asp-for="Block.EndLocal" class="form-label">Until</label><input asp-for="Block.EndLocal" type="datetime-local" min="@Model.NowLocal.ToString("yyyy-MM-ddTHH:mm")" class="form-control spa-input" required /></div>
+                <div class="mb-3"><label asp-for="Block.Reason" class="form-label">Reason</label><input asp-for="Block.Reason" class="form-control spa-input" placeholder="Private appointment, closed, maintenance..." required /></div>
+                <button class="btn spa-btn-primary" type="submit"><i class="fa-regular fa-calendar-xmark"></i> Block this period</button>
+            </form>
+        </section>
+    </div>
+
+    <section class="spa-card mt-4">
+        <div class="spa-card-heading"><div><span class="spa-kicker">EXCEPTIONS</span><h2>Blocked periods</h2></div></div>
+        @if (!Model.BlockedPeriods.Any())
+        {
+            <div class="spa-muted-box">No special unavailable periods have been added.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table spa-table align-middle mb-0">
+                    <thead><tr><th>From</th><th>Until</th><th>Reason</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var block in Model.BlockedPeriods)
+                    {
+                        <tr><td>@block.StartLocal.ToString("dd MMM yyyy HH:mm")</td><td>@block.EndLocal.ToString("dd MMM yyyy HH:mm")</td><td>@block.Reason</td><td class="text-end"><form method="post" asp-page-handler="DeleteBlock" onsubmit="return confirm('Remove this blocked period?');"><input type="hidden" name="id" value="@block.Id" /><button class="btn spa-btn-danger-outline btn-sm" type="submit">Remove</button></form></td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
